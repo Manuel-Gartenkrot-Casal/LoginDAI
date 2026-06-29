@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth</title>
+  <style>
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── TOKENS ── */
+    :root {
+      --bg-outer:      #5c2d6e;
+      --bg-mid:        #7b3f8a;
+      --card-top:      #c97ba8;   /* pink gradient top */
+      --card-sky1:     #9b5a8a;
+      --card-sky2:     #c47a9a;
+      --dune-dark:     #4a2560;
+      --dune-light:    #d4899e;
+      --moon:          #c890a8;
+      --white:         #ffffff;
+      --input-bg:      #e8a0b8;
+      --input-text:    #7b3f68;
+      --input-ph:      #c07898;
+      --btn-login:     #5c2d6e;
+      --btn-hover:     #4a2258;
+      --toggle-on:     #5c2d6e;
+      --link:          #7b3f68;
+      --text-dark:     #2d1a38;
+      --text-muted:    #8a6070;
+      --card-white:    #f7f0f4;
+      --error:         #c0392b;
+      --success:       #27ae60;
+    }
+
+    /* ── BODY / SCENE ── */
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 60% 20%, var(--bg-mid) 0%, var(--bg-outer) 55%, #2d1040 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      position: relative;
+    }
+
+    /* ── STARS ── */
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      opacity: 0;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50%       { opacity: 0.9; transform: scale(1); }
+    }
+
+    /* ── SHOOTING STARS ── */
+    .shoot {
+      position: absolute;
+      width: 2px;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.8));
+      transform-origin: top;
+      opacity: 0;
+      animation: shoot var(--sdur, 2s) ease-in infinite;
+      animation-delay: var(--sdelay, 0s);
+    }
+    @keyframes shoot {
+      0%   { opacity: 0; transform: rotate(var(--angle,145deg)) translateY(0); }
+      10%  { opacity: 0.9; }
+      60%  { opacity: 0.4; }
+      100% { opacity: 0; transform: rotate(var(--angle,145deg)) translateY(200px); }
+    }
+
+    /* ── CARD ── */
+    .card {
+      position: relative;
+      z-index: 10;
+      width: 340px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    /* ── ILLUSTRATION ── */
+    .illustration {
+      height: 200px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, #3b1a50 0%, #7a3c72 30%, #c0748a 70%, #d4899e 100%);
+    }
+
+    /* Sky stars inside illustration */
+    .illus-star {
+      position: absolute;
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: white;
+      opacity: 0.7;
+    }
+
+    /* Moon */
+    .moon {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #e0b0c8, #b888a8);
+      box-shadow: 0 0 20px rgba(210, 160, 200, 0.5);
+    }
+
+    /* Dunes — SVG inline */
+    .dunes {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+    }
+
+    /* ── FORM SECTION ── */
+    .form-section {
+      background: var(--card-white);
+      padding: 28px 28px 24px;
+    }
+
+    .form-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 20px;
+      letter-spacing: -0.3px;
+    }
+
+    /* ── INPUTS ── */
+    .input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .input-wrap svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      fill: var(--input-ph);
+      pointer-events: none;
+    }
+    .input-wrap input {
+      width: 100%;
+      padding: 11px 14px 11px 40px;
+      border: none;
+      border-radius: 25px;
+      background: var(--input-bg);
+      color: var(--input-text);
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .input-wrap input::placeholder { color: var(--input-ph); }
+    .input-wrap input:focus {
+      background: #f0b8cc;
+      box-shadow: 0 0 0 3px rgba(92, 45, 110, 0.2);
+    }
+
+    /* ── ROW: remember / forgot ── */
+    .row-opts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 8px 0 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .toggle-wrap { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+    .toggle {
+      width: 32px; height: 18px;
+      border-radius: 10px;
+      background: #d0b0c0;
+      position: relative;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .toggle.on { background: var(--toggle-on); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle.on::after { transform: translateX(14px); }
+    .forgot-link { color: var(--link); text-decoration: none; font-size: 12px; }
+    .forgot-link:hover { text-decoration: underline; }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 25px;
+      background: var(--btn-login);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover  { background: var(--btn-hover); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .link-secondary {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      color: var(--text-muted);
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+    }
+    .link-secondary:hover { color: var(--link); }
+
+    /* ── NOTICE (error / success) ── */
+    .notice {
+      display: none;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      margin-bottom: 12px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .notice.error   { background: #fde8e8; color: var(--error); display: block; }
+    .notice.success { background: #e8f8ee; color: var(--success); display: block; }
+
+    /* ── VIEWS ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── WELCOME ── */
+    .welcome-panel {
+      display: none;
+      text-align: center;
+      padding: 20px 0 8px;
+    }
+    .welcome-panel.active { display: block; }
+    .welcome-avatar {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--btn-login);
+      color: white;
+      font-size: 22px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .welcome-name { font-size: 17px; font-weight: 700; color: var(--text-dark); }
+    .welcome-email { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+    .btn-logout {
+      padding: 9px 28px;
+      border-radius: 25px;
+      border: 2px solid var(--btn-login);
+      color: var(--btn-login);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { background: var(--btn-login); color: white; }
+  </style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Card -->
+<div class="card">
+
+  <!-- Illustration -->
+  <div class="illustration" id="illus">
+    <!-- moon -->
+    <div class="moon"></div>
+    <!-- SVG dunes -->
+    <svg class="dunes" viewBox="0 0 340 140" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <!-- back dunes (darker) -->
+      <path d="M-10 140 Q30 60 90 90 Q130 110 170 70 Q210 30 260 80 Q300 110 350 75 L350 140Z"
+            fill="#4a2560" opacity="0.85"/>
+      <!-- mid dunes (lighter pink) -->
+      <path d="M-10 140 Q20 90 70 105 Q110 118 150 90 Q185 68 230 95 Q270 115 310 85 Q330 75 350 90 L350 140Z"
+            fill="#c07090" opacity="0.75"/>
+      <!-- front dunes -->
+      <path d="M-10 140 Q15 115 50 125 Q90 135 120 118 Q155 102 190 120 Q225 135 260 110 Q295 88 350 115 L350 140Z"
+            fill="#d4899e" opacity="0.9"/>
+      <!-- foreground bumps left -->
+      <path d="M-10 140 Q10 125 40 135 Q60 140 80 132 Q100 122 130 140Z"
+            fill="#3a1850"/>
+      <!-- foreground bumps right -->
+      <path d="M260 140 Q290 118 320 130 Q340 138 360 128 L360 140Z"
+            fill="#3a1850"/>
+    </svg>
+  </div>
+
+  <!-- Form section -->
+  <div class="form-section">
+
+    <!-- ── WELCOME STATE ── -->
+    <div class="welcome-panel" id="welcomePanel">
+      <div class="welcome-avatar" id="welcomeAvatar">?</div>
+      <div class="welcome-name" id="welcomeName">Hola!</div>
+      <div class="welcome-email" id="welcomeEmail"></div>
+      <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+
+    <!-- ── LOGIN VIEW ── -->
+    <div class="view active" id="loginView">
+      <div class="form-title">Login</div>
+      <div class="notice" id="loginNotice"></div>
+
+      <div class="input-wrap">
+        <!-- user icon -->
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        <input type="text" id="loginIdentifier" placeholder="Username or Email" autocomplete="username" />
+      </div>
+
+      <div class="input-wrap">
+        <!-- lock icon -->
+        <svg viewBox="0 0 24 24"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3.1-9H8.9V6a3.1 3.1 0 0 1 6.2 0v2z"/></svg>
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
+      </div>
+
+      <div class="row-opts">
+        <div class="toggle-wrap" onclick="toggleRemember()">
+          <div class="toggle on" id="rememberToggle"></div>
+          <span>remember me</span>
+        </div>
+        <a class="forgot-link" href="#">forgot password</a>
+      </div>
+
+      <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Login</button>
+      <button class="link-secondary" onclick="switchView('signup')">Create Account</button>
+    </div>
+
+    <!-- ── SIGNUP VIEW ── -->
+    <div class="view" id="signupView">
+      <div class="form-title">Create Account</div>
+      <div class="notice" id="signupNotice"></div>
+
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        <input type="text" id="signupUsername" placeholder="Username" autocomplete="username" />
+      </div>
+
+      <div class="input-wrap">
+        <!-- email icon -->
+        <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        <input type="email" id="signupEmail" placeholder="Email" autocomplete="email" />
+      </div>
+
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3.1-9H8.9V6a3.1 3.1 0 0 1 6.2 0v2z"/></svg>
+        <input type="password" id="signupPassword" placeholder="Password (min. 6 chars)" autocomplete="new-password" />
+      </div>
+
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3.1-9H8.9V6a3.1 3.1 0 0 1 6.2 0v2z"/></svg>
+        <input type="password" id="signupConfirm" placeholder="Confirm Password" autocomplete="new-password" />
+      </div>
+
+      <button class="btn-primary" id="signupBtn" onclick="handleSignup()">Create Account</button>
+      <button class="link-secondary" onclick="switchView('login')">Already have an account? Login</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:3001/api/auth';
+
+  // ── STARS GENERATION ──────────────────────────────────────────────────────
+  (function generateStars() {
+    const container = document.getElementById('stars');
+
+    // Static background stars
+    for (let i = 0; i < 90; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = Math.random() * 2.5 + 1;
+      s.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${Math.random()*100}%;
+        top:${Math.random()*100}%;
+        --dur:${2+Math.random()*4}s;
+        --delay:${Math.random()*5}s;
+      `;
+      container.appendChild(s);
+    }
+
+    // Small stars inside illustration
+    const illus = document.getElementById('illus');
+    for (let i = 0; i < 30; i++) {
+      const s = document.createElement('div');
+      s.className = 'illus-star';
+      s.style.cssText = `left:${Math.random()*100}%; top:${Math.random()*60}%;`;
+      illus.appendChild(s);
+    }
+
+    // Shooting stars
+    for (let i = 0; i < 5; i++) {
+      const sh = document.createElement('div');
+      sh.className = 'shoot';
+      sh.style.cssText = `
+        left:${10+Math.random()*80}%;
+        top:${Math.random()*40}%;
+        --angle:${135+Math.random()*30}deg;
+        --sdur:${1.5+Math.random()*2}s;
+        --sdelay:${i*2+Math.random()*3}s;
+      `;
+      container.appendChild(sh);
+    }
+  })();
+
+  // ── TOGGLE REMEMBER ───────────────────────────────────────────────────────
+  let rememberMe = true;
+  function toggleRemember() {
+    rememberMe = !rememberMe;
+    document.getElementById('rememberToggle').classList.toggle('on', rememberMe);
+  }
+
+  // ── SWITCH VIEWS ─────────────────────────────────────────────────────────
+  function switchView(view) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(view + 'View').classList.add('active');
+    clearNotices();
+  }
+
+  function clearNotices() {
+    document.querySelectorAll('.notice').forEach(n => {
+      n.className = 'notice';
+      n.textContent = '';
+    });
+  }
+
+  function showNotice(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'notice ' + type;
+  }
+
+  // ── TOKEN STORAGE ─────────────────────────────────────────────────────────
+  function saveToken(token, user) {
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('jwt', token);
+    storage.setItem('user', JSON.stringify(user));
+  }
+
+  function getToken() {
+    return localStorage.getItem('jwt') || sessionStorage.getItem('jwt');
+  }
+
+  function getUser() {
+    const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function clearToken() {
+    localStorage.removeItem('jwt');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('jwt');
+    sessionStorage.removeItem('user');
+  }
+
+  // ── SHOW WELCOME ──────────────────────────────────────────────────────────
+  function showWelcome(user) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const panel = document.getElementById('welcomePanel');
+    panel.classList.add('active');
+    document.getElementById('welcomeAvatar').textContent = user.username[0].toUpperCase();
+    document.getElementById('welcomeName').textContent = `Hola, ${user.username}!`;
+    document.getElementById('welcomeEmail').textContent = user.email;
+  }
+
+  function logout() {
+    clearToken();
+    document.getElementById('welcomePanel').classList.remove('active');
+    switchView('login');
+  }
+
+  // ── AUTO-LOGIN IF TOKEN EXISTS ─────────────────────────────────────────────
+  (function checkExistingSession() {
+    const token = getToken();
+    const user = getUser();
+    if (token && user) showWelcome(user);
+  })();
+
+  // ── LOGIN ─────────────────────────────────────────────────────────────────
+  async function handleLogin() {
+    const identifier = document.getElementById('loginIdentifier').value.trim();
+    const password   = document.getElementById('loginPassword').value;
+    if (!identifier || !password) {
+      return showNotice('loginNotice', 'Please fill in all fields.', 'error');
+    }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'Logging in…';
+    clearNotices();
+    try {
+      const res = await fetch(`${API}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showNotice('loginNotice', data.error || 'Login failed.', 'error');
+      } else {
+        saveToken(data.token, data.user);
+        showWelcome(data.user);
+      }
+    } catch {
+      showNotice('loginNotice', 'Cannot reach server. Is it running?', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
+  }
+
+  // ── SIGNUP ────────────────────────────────────────────────────────────────
+  async function handleSignup() {
+    const username = document.getElementById('signupUsername').value.trim();
+    const email    = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const confirm  = document.getElementById('signupConfirm').value;
+
+    if (!username || !email || !password || !confirm) {
+      return showNotice('signupNotice', 'All fields are required.', 'error');
+    }
+    if (password !== confirm) {
+      return showNotice('signupNotice', 'Passwords do not match.', 'error');
+    }
+    if (password.length < 6) {
+      return showNotice('signupNotice', 'Password must be at least 6 characters.', 'error');
+    }
+
+    const btn = document.getElementById('signupBtn');
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+    clearNotices();
+
+    try {
+      const res = await fetch(`${API}/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showNotice('signupNotice', data.error || 'Signup failed.', 'error');
+      } else {
+        saveToken(data.token, data.user);
+        showWelcome(data.user);
+      }
+    } catch {
+      showNotice('signupNotice', 'Cannot reach server. Is it running?', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  }
+
+  // ── ENTER KEY SUPPORT ────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const loginActive = document.getElementById('loginView').classList.contains('active');
+    if (loginActive) handleLogin();
+    else handleSignup();
+  });
+</script>
+</body>
+</html>
